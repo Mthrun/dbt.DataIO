@@ -16,19 +16,19 @@ ReadNAMES(FileName, InDirectory = getwd())
 }
 \details{
   \code{ReadNAMES} may have a *.names extension, if not, it will be added automatically,
-  and only files with a .names extension can be loaded
+  and only files with a .names extension can be loaded. 
 }
 \value{
-  a list of length 3 containing the following:
-  \item{NamesKey}{the unique key of the names}
-  \item{RowNames}{the names themselves}
-  \item{RowRest}{additional info, optional}
+  a list of length 5 containing the following:
+  \item{Key}{[1:n], the unique key of the names, unique index from first column}
+  \item{Names}{(1:n)  the names themselves, Names contained in Column 2 as a character vector}
+  \item{FurtherText}{ (1:n,1:rr) additional info, optional, All in colums 3 and beyond}
+  \item{Comment}{Optional, additional info,  Char Array of all lines of Commens,  without the leading "#"}
+  \item{Header}{Either (1:rr+1) the header, character vector of all columns except the key}
+    
 
 }
-\references{
-	\url{www.uni-marburg.de/fb12/datenbionik}
-	\email{databionics@mathematik.uni-marburg.de}
-}
+
 \author{Michael Thrun}
 
 \seealso{ \code{addext}, \code{WriteNAMES}, }

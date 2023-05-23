@@ -122,7 +122,10 @@ else{
           Header[Ind12] = Header1
       }
       # remove all Blanks from header
+      Header = gsub('  ','_',Header)
       Header = sub(' ', '_', Header)
+      Header = gsub('\n','_',Header)
+      Header = gsub('\t','_',Header)
       
       ### write in file
       # write dimensions Number of lines & columns
@@ -141,8 +144,8 @@ else{
       
       # write 'Header'-line
       cat('% ', file=FileName, append=TRUE)
-      for(i in 1:length(Header))
-        Header[i]=sub(' ','',Header[i]) #Blanks ersetzen
+      # for(i in 1:length(Header))
+      #   Header[i]=sub(' ','',Header[i]) #Blanks ersetzen
       cat(Header,'\n', file=FileName, append=TRUE, sep='\t')
       
       if(mode(Data)!="numeric"){ #MT: Abfangen von Strings und character

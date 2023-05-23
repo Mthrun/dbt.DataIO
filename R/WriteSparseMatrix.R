@@ -1,4 +1,6 @@
-WriteSparseMatrix <- function(FileNameWithoutExt, ZeilenInd, SpaltenInd, Inhalt, Dimension, DimNames, OutDirectory, Header, Key, Comment){
+WriteSparseMatrix = function(FileNameWithoutExt, ZeilenInd, SpaltenInd, Inhalt,
+                             Dimension, DimNames, OutDirectory, Header, Key,
+                             FurtherTexts, Comment){
 # WriteSparseMatrix(FileNameWithoutExt, ZeilenInd, SpaltenInd, Inhalt, Dimension, DimNames, OutDirectory, Header, Key, Comment){
 # WriteSparseMatrix(FileNameWithoutExt, ZeilenInd, SpaltenInd, Inhalt)
 
@@ -100,23 +102,47 @@ if(missing(OutDirectory)){OutDirectory = getwd()}
 if(missing(Comment)){Comment = NULL}
 
 # WriteLRN(FileName,Data,Header,Key,DataDefined,OutDirectory,CommentOrDigits);
-WriteLRN(paste0(FileNameWithoutExt,'.lrn'),Data,Header,KeyLong,c(),OutDirectory,Comment);
+WriteLRN(FileName        = paste0(FileNameWithoutExt,'.lrn'),
+         Data            = Data,
+         Header          = Header,
+         Key             = KeyLong,
+         DataDefined     = c(),
+         OutDirectory    = OutDirectory,
+         CommentOrDigits = Comment);
 
 # Falls DimNames gegeben, schreiben wir auch noch eine *.names aus.
 if(!missing(DimNames)){
-	if(length(DimNames[[1]]) == length(DimNames[[2]]) && all(DimNames[[1]] == DimNames[[2]])){ # Falls wir eine Adj-Matrix haben, muessen wir uns nicht Spalten&Zeilennamen merken sondern nur eins.
+  Check1 = length(DimNames[[1]]) == length(DimNames[[2]])
+  Check2 = all(DimNames[[1]] == DimNames[[2]])
+	if(Check1 && Check2){ # Falls wir eine Adj-Matrix haben, muessen wir uns nicht Spalten&Zeilennamen merken sondern nur eins.
 		Names <- DimNames[[1]]
 		Comments <- paste0('Names file containing names for sparse matrix saved in \n# lrn file called: ', FileNameWithoutExt, '.lrn. Row- and colnames are identical!')
 		# WriteNAMES(FileName, Names,Key,FurtherTexts,OutDirectory, DescriptionHeader, Comments)
-		WriteNAMES(FileNameWithoutExt, Names, 1:length(Names),OutDirectory = OutDirectory, Comments=Comments)
+		if(is.null(FurtherTexts)){
+		  FurtherTexts = rep(NA, length(Names))
+		}
+		WriteNAMES(FileName     = FileNameWithoutExt,
+		           Names        = Names,
+		           Key          = 1:length(Names),
+		           OutDirectory = OutDirectory,
+		           FurtherTexts = FurtherTexts,
+		           Comments     = Comments)
+		
 	}else{
-		Names <- c(DimNames[[1]], DimNames[[2]])
-		FurtherTexts <- c(rep('rowname',length(DimNames[[1]])),rep('colname',length(DimNames[[2]])))
-		DescriptionHeader <- c('Key', 'Names', 'row/colnames')
-		Comments <- paste0('Names file containing row- and columnnames for sparse matrix saved in \n# lrn file called: ', FileNameWithoutExt, '.lrn.')
+		stop("WriteSparseMatrix: DimNames: Dimensions do not check out. There is a problem with the database! Check ORA/inst/extdata/ and updateORAdatabase2.")
+	  #Names             <- c(DimNames[[1]], DimNames[[2]])
+		#FurtherTexts2     <- c(rep('rowname',length(DimNames[[1]])),rep('colname',length(DimNames[[2]])))
+		#DescriptionHeader <- c('Key', 'Names', 'row/colnames')
+		#Comments          <- paste0('Names file containing row- and columnnames for sparse matrix saved in \n# lrn file called: ', FileNameWithoutExt, '.lrn.')
 		# WriteNAMES(FileName, Names,Key,FurtherTexts,OutDirectory, DescriptionHeader, Comments)
-		WriteNAMES(FileNameWithoutExt, Names, 1:length(Names),FurtherTexts, OutDirectory, DescriptionHeader, Comments)
-	}#end if Adjazenzmatrix
+		#WriteNAMES(FileName          = FileNameWithoutExt,
+		#           Names             = Names,
+		#           Key               = 1:length(Names),
+		#           FurtherTexts      = cbind(FurtherTexts, FurtherTexts2),
+		#           OutDirectory      = OutDirectory,
+		#           DescriptionHeader = DescriptionHeader,
+		#           Comments          = Comments)
+	  }#end if Adjazenzmatrix
 }#end if DimNames gegeben
 
 

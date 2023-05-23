@@ -1,42 +1,43 @@
 ReadFCSNavios = function(FileName, FilePath = "", VarsToCompensate = NULL,
                          tryToCompensate = TRUE,Anonymize = FALSE,Silent=FALSE){
-  # V = ReadFCSNavios(FileName, FilePath)
-  # Read lmd files containing fcs files
-  # 
-  # INPUT
-  # FileName             name of the file.
-  # FilePath             name of the file's directory
-  # VarsToCompensate     Vector of TRUE and FALSE for each variable in the data.
-  #                      If TRUE, the variable will be compensated.
-  #                      If not given, the function will try to find the right
-  #                      variables itself. Boolean Vector the length of number
-  #                      of variables.
-  # tryToCompensate      tries to compensate the PlainData if a compensation
-  #                      matrix can be found.
-  # Anonymize            tries(!) to remove common keywords containing
-  #                      information about patients.
-  #                      THIS IN NO WAY MAKES DATA SAVE TO GIVE OUT!
-  # OUTPUT
-  # FCSData                       object of class flowFrame.
-  #                               relates to flowCore::read.FCS.
-  # PlainData[1:n,1:d]            Data in a plain matrix format. This is the
-  #                               data as it was found in the lmd/fcs file which
-  #                               might already be compensated.
-  # CompensationMatrix[1:d2,1:d2] Compensation Matrix if existing.
-  # CompensatedData[1:n,1:d]      Matrix with compensated data.
-  # VarNames[1:d]                 variable names (e.g. "FS_PEAK_LIN", "FS",
-  #                               "SS_PEAK_LIN", "SS", "TCRgd-FITC", "CD45-KrO")
-  # VarIdentifiers[1:d]           detector names used by the machine to adress
-  #                               the variable) (e.g. "FS-H", "FS-A", "SS-H",
-  #                               "SS-A","FL1-A", "FL1-H", "FL2-A", "FL2-H",...,
-  #                               "TIME")
-  # DeviceName                    Flowcytometer device name.
-  # 
-  # Temporarily REMOVED INPUT  
-  # Anonymize if T, then parts of FCS Data get overwritten by placeholders to
-  # remove links to patients
+# V = ReadFCSNavios(FileName, FilePath)
+# Read lmd files containing fcs files
+# 
+# INPUT
+# FileName             name of the file.
+# FilePath             name of the file's directory
+# VarsToCompensate     Vector of TRUE and FALSE for each variable in the data.
+#                      If TRUE, the variable will be compensated.
+#                      If not given, the function will try to find the right
+#                      variables itself. Boolean Vector the length of number
+#                      of variables.
+# tryToCompensate      tries to compensate the PlainData if a compensation
+#                      matrix can be found.
+# Anonymize            tries(!) to remove common keywords containing
+#                      information about patients.
+#                      NOTE: it cannot be assured that all the data is anonymous
+# OUTPUT
+# V$FCSData                     object of class flowFrame.
+#                               relates to flowCore::read.FCS.
+# V$PlainData[1:n,1:d]          Data in a plain matrix format. This is the
+#                               data as it was found in the lmd/fcs file which
+#                               might already be compensated.
+# V$CompensationMatrix[1:d2,1:d2] Compensation Matrix if it exists
+# V$CompensatedData[1:n,1:d]    Matrix with compensated data.
+# V$VarNames[1:d]                variable names (e.g. "FS_PEAK_LIN", "FS",
+#                               "SS_PEAK_LIN", "SS", "TCRgd-FITC", "CD45-KrO")
+# V$VarIdentifiers[1:d]         detector names used by the machine to adress
+#                               the variable) (e.g. "FS-H", "FS-A", "SS-H",
+#                               "SS-A","FL1-A", "FL1-H", "FL2-A", "FL2-H",...,
+#                               "TIME")
+# V$DeviceName                    Flowcytometer device name.
   
-  #FileName  = addext(FileName,'LMD');     #  checks for the right extension and adds it if necessary
+# 
+# Temporarily REMOVED INPUT  
+# Anonymize if T, then parts of FCS Data get overwritten by placeholders to
+# remove links to patients
+  
+#FileName  = addext(FileName,'LMD');     #  checks for the right extension and adds it if necessary
   
   
   if(nchar(FilePath) > 0){
@@ -77,6 +78,7 @@ ReadFCSNavios = function(FileName, FilePath = "", VarsToCompensate = NULL,
   # get descriptions for variables
   varDescr = sapply(1:ncol(data), function(p) AddressToDescr[2,AddressToDescr[1,] == frame2@description[[paste0("@P", p, "ADDRESS")]]])
   fixedVarDescr = gsub("_INT_LIN", "",gsub("/", "v", gsub(" ", "_", varDescr)))
+  fixedVarDescr=gsub("CD_","CD",fixedVarDescr)
   
   if(!is.null(VarsToCompensate)){
     if(ncol(data)!=length(VarsToCompensate)){
@@ -94,8 +96,28 @@ ReadFCSNavios = function(FileName, FilePath = "", VarsToCompensate = NULL,
     for(i in 1:ncol(spill)){
       spill[i,i] = 1
     }
-    compensation = solve(spill)
-  }
+    
+    FLAG_invertible=FALSE
+    tryCatch({
+      compensation = solve(spill)
+      FLAG_invertible=TRUE
+    },error=function(e){
+      warning(e)
+    
+    })
+    if(isFALSE(FLAG_invertible)){
+      warning("ReadFCSNavios: spill matrix is not invertible.Using the Moore-Penrose generalized inverse.")
+      compensation=MASS::ginv(spill)
+      # ForceSpill           Boolean: If TRUE: adds some epsilon noise to spill matrix if it is not invertible to compensation matrix
+      #                               Compensation values outside of 1%-99% quantile will be set to zero
+      # spill=spill+runif(length(spill),min = -0.0000001,max=0.0000001)
+      # compensation = solve(spill)
+      # minax=quantile(compensation)
+      # compensation[compensation<minax[1]]=0
+      # compensation[compensation>compensation[2]]=0
+      # compensation=round(compensation,3)
+    }
+  }#end is not null spill
 
   # search for names
   varNames = sapply(1:ncol(data), function(i) ifelse(is.null((a = frame2@description[paste0("$P",i, "N")][[1]])), NA, a))

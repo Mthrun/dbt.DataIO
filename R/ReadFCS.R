@@ -1,8 +1,11 @@
 ReadFCS = function(FileName, FilePath = "", Dataset = NULL,
                    VarsToCompensate = NULL, tryToCompensate = T,
                    Anonymize = F){
+  # # Read fcs files
+  # V = ReadFCS(InFileName, InDirectory)
   # V = ReadFCS(FileName, FilePath, Dataset = 2)
-  # Read fcs files
+  # Data       = as.matrix(V$PlainData)
+  # Header     = V$VarNames ; Header
   # 
   # INPUT
   # FileName             name of the file.
@@ -24,9 +27,9 @@ ReadFCS = function(FileName, FilePath = "", Dataset = NULL,
   #                      THIS IN NO WAY MAKES DATA SAVE TO GIVE OUT!
   #
   # OUTPUT
-  # FCSData                       object of class flowFrame.
+  # v$FCSData                     object of class flowFrame.
   #                               relates to flowCore::read.FCS
-  # PlainData[1:n,1:d]            Data in a plain matrix format. This is the data as
+  # v$PlainData[1:n,1:d]          Data in a plain matrix format. This is the data as
   #                               it was found in the lmd/fcs file which might
   #                               already be compensated
   # CompensationMatrix[1:d2,1:d2] Compensation Matrix if existing
@@ -114,8 +117,26 @@ ReadFCS = function(FileName, FilePath = "", Dataset = NULL,
     for(i in 1:ncol(spill)){
       spill[i,i] = 1
     }
-    compensation = solve(spill)
-  }
+    
+    FLAG_invertible=FALSE
+    tryCatch({
+      compensation = solve(spill)
+      FLAG_invertible=TRUE
+    },error=function(e){
+      warning(e)
+   })
+   if(isFALSE(FLAG_invertible)){
+     warning("ReadFCSNavios: spill matrix is not invertible.Using the Moore-Penrose generalized inverse.")
+     compensation=MASS::ginv(spill)
+   #   spill=spill+runif(length(spill),min = -0.0000001,max=0.0000001)
+   #   compensation = solve(spill)
+   #   minax=quantile(compensation)
+   #   compensation[compensation<minax[1]]=0
+   #   compensation[compensation>compensation[2]]=0
+   #   compensation=round(compensation,3)
+   #   warning("ReadFCS: spill matrix is not invertible. Adding some epsilon random noise to make matrix invertible.")
+    }
+  }#end is not null spill
   
   # search for names and descriptions
   parameterDescriptions = sapply(1:ncol(data), function(i){
@@ -133,7 +154,7 @@ ReadFCS = function(FileName, FilePath = "", Dataset = NULL,
   # fix naming notation
   fixedParameterNames = gsub("_INT_LIN", "",gsub("/", "v",
                             gsub(" ", "_", parameterNames)))
-  
+  fixedParameterNames=gsub("CD_","CD",fixedParameterNames)
   #fixedParameterNames[fixedParameterNames == "FS_FS"] = "FS"
   #fixedParameterNames[fixedParameterNames == "SS_SS"] = "SS"
   #fixedParameterNames[fixedParameterNames == "TIME_TIME"] = "TIME"
